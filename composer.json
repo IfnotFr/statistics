@@ -1,0 +1,12 @@
+{
+	"name": "white-frame/statistics",
+	"description": "Tools for extracting statistics from a sql table",
+	"autoload": {
+		"psr-4": {
+			"WhiteFrame\\Statistics\\" : "src/"
+		}
+	},
+	"require": {
+		
+	}
+}
