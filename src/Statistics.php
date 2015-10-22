@@ -1,7 +1,5 @@
 <?php
-namespace Ifnot\WhiteFrame\Database;
-
-use Ifnot\WhiteFrame\View\Highcharts\Highcharts;
+namespace WhiteFrame\Statistics;
 
 /**
  * Class Statistics
