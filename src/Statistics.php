@@ -27,7 +27,9 @@ class Statistics
 	{
 		$this->query = $query;
 		$this->indicators = [];
-
+		
+		$this->step = 'daily';
+		
 		$this->cache = null;
 	}
 
