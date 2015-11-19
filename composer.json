@@ -1,6 +1,13 @@
 {
   "name": "white-frame/statistics",
   "description": "Tools for extracting statistics from a sql table",
+  "license": "WTFPL",
+  "authors": [
+    {
+      "name": "Anael Favre",
+      "email": "anael.favre@gmail.com"
+    }
+  ],
   "autoload": {
     "psr-4": {
       "WhiteFrame\\Statistics\\": "src/"
