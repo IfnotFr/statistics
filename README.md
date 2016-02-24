@@ -34,6 +34,8 @@ $statistics = Statistics::of($validSales);
 Next, Specify the date column and the interval for filtering datas :
 
 ```php
+use WhiteFrame\Statistics\Interval;
+
 // If we want to build statistics about validation date of sales (it can be also of the creation date, 
 // in this case we will use the eloquent created_at ...) 
 $statistics->date('validated_at');
