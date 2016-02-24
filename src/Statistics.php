@@ -1,368 +1,208 @@
 <?php
 namespace WhiteFrame\Statistics;
 
+use B2B\Core\Database\Eloquent\Builder;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
+
 /**
  * Class Statistics
  */
 class Statistics
 {
-	protected $query;
+    protected $query;
 
-	protected $startDate;
-	protected $endDate;
-	protected $step;
+    protected $interval;
 
-	protected $indicators;
-	protected $grouping;
+    protected $date_column;
+    protected $group_column;
 
-	protected $cache;
+    protected $indicators;
 
-	public static $COUNTER = 1;
-	public static $VALUE = 2;
+    protected $cache;
 
-	/**
-	 * @param $query
-	 */
-	public function __construct($query)
-	{
-		$this->query = $query;
-		$this->indicators = [];
-		
-		$this->step = 'daily';
-		
-		$this->cache = null;
-	}
+    /**
+     * @param $query
+     */
+    public function __construct($query)
+    {
+        $this->query = $query;
+        $this->indicators = [];
 
-	/**
-	 * @param $query
-	 *
-	 * @return Statistics
-	 */
-	public static function of($query)
-	{
-		return new Statistics($query);
-	}
+        $this->interval = new Interval(Interval::$DAILY);
 
-	/**
-	 * @param $startDate
-	 * @param $endDate
-	 *
-	 * @return $this
-	 */
-	public function setInterval($startDate, $endDate)
-	{
-		$this->cache = null;
+        $this->cache = null;
+    }
 
-		// Handle date formatting
-		$this->startDate = preg_replace("#([0-9]{2})+\/([0-9]{2})+\/([0-9]{4})+#", "$3-$2-$1", $startDate);
-		$this->endDate = preg_replace("#([0-9]{2})+\/([0-9]{2})+\/([0-9]{4})+#", "$3-$2-$1", $endDate);
+    /**
+     * @param $query
+     *
+     * @return Statistics
+     */
+    public static function of($query)
+    {
+        return new Statistics($query);
+    }
 
-		return $this;
-	}
+    /**
+     * @param Carbon $start
+     * @param Carbon $end
+     *
+     * @return $this
+     */
+    public function interval($step, Carbon $start, Carbon $end)
+    {
+        $this->cache = null;
 
-	/**
-	 * @return array
-	 */
-	public function getInterval()
-	{
-		return [
-			'start_date' => $this->startDate,
-			'end_date' => $this->endDate
-		];
-	}
+        $this->interval
+            ->step($step)
+            ->start($start)
+            ->end($end);
 
-	/**
-	 * @param $stepName
-	 *
-	 * @return $this
-	 */
-	public function setStep($step)
-	{
-		$this->cache = null;
-		$this->step = $step;
+        return $this;
+    }
 
-		return $this;
-	}
+    /**
+     * @param $name
+     * @param $method
+     *
+     * @return $this
+     */
+    public function indicator($name, $function, $counting_method = null)
+    {
+        $this->cache = null;
 
-	/**
-	 * @param $name
-	 * @param $method
-	 *
-	 * @return $this
-	 */
-	public function addIndicator($name, $function, $method = 1)
-	{
-		$this->cache = null;
-		$this->indicators[$name] = [
-			'method' => $method,
-			'function' => $function
-		];
+        if (is_null($counting_method)) {
+            $counting_method = Indicator::$COUNTER;
+        }
 
-		return $this;
-	}
+        $this->indicators[$name] = new Indicator($name, $function, $counting_method);
 
-	/**
-	 * @param $column
-	 *
-	 * @return $this
-	 */
-	public function setGrouping($column)
-	{
-		$this->cache = null;
-		$this->grouping = $column;
+        return $this;
+    }
 
-		return $this;
-	}
+    /**
+     * @param $column
+     */
+    public function date($column)
+    {
+        $this->cache = null;
 
-	/**
-	 * @return array
-	 */
-	public function make()
-	{
-		if(!is_null($this->cache))
-			return $this->cache;
+        $this->date_column = $column;
 
-		$datas = [];
-		$statistics = [
-			'indicators' => [
+        return $this;
+    }
 
-			],
-			'collection' => [
-				'count' => 0
-			]
-		];
+    /**
+     * @param $column
+     *
+     * @return $this
+     */
+    public function group($column)
+    {
+        $this->cache = null;
 
-		// Set interval
-		$this->query->whereBetween('created_at', [$this->startDate . " 00:00:00", $this->endDate . " 23:59:59"]);
+        $this->group_column = $column;
 
-		// Filling datas with empty values on all range dates
-		foreach($this->getStepIndexes() as $index) {
-			$datas[$index] = $this->getEmptyDatas();
-		}
+        return $this;
+    }
 
-		// Building datas with indicators functions
-		foreach($this->query->get() as $row) {
-			$index = $this->getDateToStepIndex($row->created_at);
-			$datas[$index] = $this->getDatasForRow($row, $datas[$index]);
+    /**
+     * @return array
+     */
+    public function make()
+    {
+        if (!is_null($this->cache)) {
+            return $this->cache;
+        }
 
-			// Statistics
-			$statistics['collection']['count']++;
-		}
+        // Configure the query for setting the date interval
+        $query = $this->query->whereBetween($this->date_column, [
+            $this->interval->start()->format('Y-m-d') . " 00:00:00",
+            $this->interval->end()->format('Y-m-d') . " 23:59:59"
+        ]);
 
-		$statistics['indicators'] = $this->getIndicatorStatistics($datas);
+        // Converting the query to builded array datas
+        $datas = $this->getDatasFromQuery($query);
 
-		return $this->cache = [
-			'datas' => $datas,
-			'statistics' => $statistics,
-			'interval' => [
-				'start_date' => $this->startDate,
-				'end_date' => $this->endDate
-			]
-		];
-	}
+        // Caching and return the result
+        return $this->cache = $datas;
+    }
 
-	/**
-	 * @return array
-	 */
-	public function getEmptyDatas()
-	{
-		$datas = [];
+    protected function getDatasFromQuery(Builder $baseQuery)
+    {
+        $datas = [];
 
-		foreach($this->indicators as $name => $infos) {
-			if($infos['method'] == self::$COUNTER) $datas[$name] = 0;
-			elseif($infos['method'] == self::$VALUE) $datas[$name] = null;
-		}
+        // Getting different values for the grouping
+        $groupValues = [
+            "" => []
+        ];
 
-		return $datas;
-	}
+        if (isset($this->group_column)) {
+            $query = clone $baseQuery;
+            $groupValues = $query->distinct()->lists($this->group_column)->all();
+        }
 
-	/**
-	 * @param $row
-	 *
-	 * @return array
-	 */
-	public function getDatasForRow($row, $old)
-	{
-		$datas = [];
+        // Filling datas with empty values on all range dates
+        foreach ($groupValues as $groupValue) {
+            foreach ($this->interval->getStepIndexes() as $index) {
+                $datas[$groupValue][$index] = $this->getEmptyDatas();
+            }
+        }
 
-		foreach($this->indicators as $name => $infos) {
-			$oldValue = $old[$name];
-			$newValue = $infos['function']($row);
+        // Building datas with indicators functions
+        $query = clone $baseQuery;
+        foreach ($query->get() as $row) {
+            $index = $this->interval->getStepIndexFromDate($row->{$this->date_column});
+            $datas[$row->{$this->group_column}][$index] = $this->getDatasForRow($row, $datas[$row->{$this->group_column}][$index]);
+        }
 
-			if($infos['method'] == self::$COUNTER) $value = $oldValue + $newValue;
-			elseif($infos['method'] == self::$VALUE) $value[] = $newValue;
+        // Build values of indicators when all done
+        foreach ($datas as $groupValue => $groupDatas) {
+            foreach ($groupDatas as $index => $data) {
+                foreach ($this->indicators as $name => $indicator) {
+                    $datas[$groupValue][$index] = $indicator->buildValue($datas[$groupValue][$index]);
+                }
+            }
 
-			$datas[$name] = $value;
-		}
+            // Converting datas to Collection
+            $datas[$groupValue] = new Collection($datas[$groupValue]);
+        }
 
-		return $datas;
-	}
+        if (isset($this->group_column)) {
+            return $datas;
+        } else {
+            return $datas[""];
+        }
+    }
 
-	/**
-	 * @param $datas
-	 *
-	 * @return array
-	 */
-	public function getIndicatorStatistics($datas)
-	{
-		$statistics = [
-			'sum' => [],
-			'min' => [],
-			'max' => [],
-			'avg' => []
-		];
+    /**
+     * @return array
+     */
+    protected function getEmptyDatas()
+    {
+        $datas = [];
 
-		$tempAvg = [];
+        foreach ($this->indicators as $name => $indicator) {
+            $datas[$name] = $indicator->getDefaultValue();
+        }
 
-		// Getting datas for indicators statistics
-		foreach($datas as $index => $indicators) {
-			foreach($indicators as $indicator => $value) {
+        return $datas;
+    }
 
-				// SUM
-				if(!isset($statistics['sum'][$indicator])) {
-					$statistics['sum'][$indicator] = 0;
-				}
-				$statistics['sum'][$indicator] += $value;
+    /**
+     * @param $row
+     *
+     * @return array
+     */
+    protected function getDatasForRow($row, $old)
+    {
+        $datas = [];
 
-				// MIN
-				if(!isset($statistics['min'][$indicator]) OR $value < $statistics['min'][$indicator]) {
-					$statistics['min'][$indicator] = $value;
-				}
+        foreach ($this->indicators as $name => $indicator) {
+            $datas[$name] = $indicator->getValue($row, $old[$name]);
+        }
 
-				// MAX
-				if(!isset($statistics['max'][$indicator]) OR $value > $statistics['max'][$indicator]) {
-					$statistics['max'][$indicator] = $value;
-				}
-
-				// AVG
-				if(!isset($tempAvg[$indicator])) {
-					$tempAvg[$indicator] = [];
-				}
-				$tempAvg[$indicator][] = $value;
-			}
-		}
-
-		// Making average values
-		foreach($tempAvg as $indicator => $values) {
-			$sum = 0;
-			foreach($values as $value) {
-				$sum += $value;
-			}
-
-			if($sum == 0) $statistics['avg'][$indicator] = null;
-			else $statistics['avg'][$indicator] = $sum / count($values);
-		}
-
-		return $statistics;
-	}
-
-	/**
-	 * @return array
-	 *
-	 */
-	public function getStepIndexes()
-	{
-
-		$dates = [];
-		$current = strtotime($this->startDate);
-		$last = strtotime($this->endDate);
-
-		while($current <= $last) {
-
-			$dates[] = date($this->getStepInfos()['format'], $current);
-			$current = strtotime($this->getStepInfos()['step'], $current);
-		}
-
-		return $dates;
-	}
-
-
-	/**
-	 * @param       $date
-	 *
-	 * @return int
-	 *
-	 */
-	public function getDateToStepIndex($date)
-	{
-		$time = strtotime($date);
-		$parsed = getdate($time);
-
-		switch($this->step) {
-			case "yearly":
-				$parsed["mon"] = 0;
-			case "monthly":
-				$parsed["mday"] = 0;
-			case "daily":
-				$parsed["hours"] = 0;
-			case "hourly":
-				$parsed["minutes"] = 0;
-			default:
-				$parsed["seconds"] = 0;
-				break;
-		}
-
-		$newTime = mktime(
-			$parsed["hours"],
-			$parsed["minutes"],
-			$parsed["seconds"],
-			$parsed["mon"],
-			$parsed["mday"],
-			$parsed["year"]
-		);
-
-		return date($this->getStepInfos()['format'], $newTime);
-	}
-
-	/**
-	 * @return mixed
-	 */
-	public function getStep()
-	{
-		return $this->step;
-	}
-
-	/**
-	 * @return array
-	 */
-	public function getStepInfos()
-	{
-		switch($this->step) {
-			case "yearly":
-				return [
-					'step' => '+1 year',
-					'format' => 'Y'
-				];
-				break;
-
-			case "monthly":
-				return [
-					'step' => '+1 month',
-					'format' => 'm/Y'
-				];
-				break;
-
-			case "daily":
-				return [
-					'step' => '+1 day',
-					'format' => 'd/m/Y'
-				];
-				break;
-
-			case "hourly":
-				return [
-					'step' => '+1 hour',
-					'format' => 'd/m/Y h:00'
-				];
-				break;
-		}
-	}
-
-	/**
-	 * @return Highcharts
-	 */
-	public function getHighcharts()
-	{
-		return new Highcharts($this);
-	}
+        return $datas;
+    }
 }
