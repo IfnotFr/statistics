@@ -19,7 +19,7 @@ Install it with composer :
 
 ## Usage
 
-First, Instanciate a `Statistics` object from a eloquent query :
+### 1 : Instanciate a `Statistics` object from a eloquent query :
 
 ```php
 use WhiteFrame\Statistics\Statistics;
@@ -31,7 +31,7 @@ $validSales = Sale::whereNotNull('validated_at');
 $statistics = Statistics::of($validSales);
 ```
 
-Next, Specify the date column and the interval for filtering datas :
+### 2 : Specify the date column and the interval for filtering datas :
 
 ```php
 use WhiteFrame\Statistics\Interval;
@@ -47,7 +47,7 @@ $statistics->date('validated_at');
 $statistics->interval(Interval::$DAILY, Carbon::createFromFormat('Y-m-d', '2016-01-01'), Carbon::now())
 ```
 
-Finish with adding indicators :
+### 3 : Add indicators :
 
 ```php
 // We want to count the sales with shipping and without shipping
@@ -68,7 +68,7 @@ $statistics->indicator('expensive_bough', function($row) {
 });
 ```
 
-Handle the datas :
+### 4 : Handle datas :
 ```php
 $collection = $statistics->make();
 
