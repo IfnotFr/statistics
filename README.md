@@ -66,6 +66,25 @@ $statistics->indicator('expensive_bough', function($row) {
   return 0;
  }
 });
+```
+
+Handle the datas :
+```php
+$collection = $statistics->make();
+
+// Use a foreach if you want to loop on each dates
+foreach($collection as $date => $values) {
+ echo $date ' : ' . $values->expensive_bough;
+}
+
+// Use Collection methods for statistics
+$collection->sum('with_shipping'); // Count the shipping
+$collection->avg('with_shipping'); // Average shpping sales on each days on the interval (if you selected daily)
+$collection->min('with_shipping'); // Minimum daily shipping on the interval
+$collection->max('with_shipping');
+
+// etc ...
+```
 
 ## Full Documentation
 
