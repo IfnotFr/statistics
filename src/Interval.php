@@ -18,6 +18,15 @@ class Interval
     protected $end;
     protected $lang;
 
+    /**
+     * Interval constructor.
+     * Create a new interval by specifying duration, steps and lang
+     *
+     * @param null $step
+     * @param Carbon|null $start
+     * @param Carbon|null $end
+     * @param string $lang
+     */
     public function __construct($step = null, Carbon $start = null, Carbon $end = null, $lang = 'en')
     {
         $this->step = $step;
@@ -26,6 +35,12 @@ class Interval
         $this->lang = $lang;
     }
 
+    /**
+     * Set or get the step of the interval
+     *
+     * @param null $step
+     * @return $this|null
+     */
     public function step($step = null)
     {
         if (isset($step)) {
@@ -36,30 +51,58 @@ class Interval
         }
     }
 
+    /**
+     * Set or get the start date of the interval
+     *
+     * @param Carbon|null $date
+     * @return $this|Carbon
+     */
     public function start(Carbon $date = null)
     {
         if (isset($date)) {
+            $date->hour = 0;
+            $date->minute = 0;
+            $date->second = 0;
+
             $this->start = $date;
+
             return $this;
         } else {
             return $this->start;
         }
     }
 
+    /**
+     * Set or get the end date of the interval
+     *
+     * @param Carbon|null $date
+     * @return $this|Carbon
+     */
     public function end(Carbon $date = null)
     {
         if (isset($date)) {
+            $date->hour = 0;
+            $date->minute = 0;
+            $date->second = 0;
+
             $this->end = $date;
+
             return $this;
         } else {
             return $this->end;
         }
     }
 
+    /**
+     * Get an array containing the dates (with step precision) beteween the start and the end date
+     *
+     * @return array
+     */
     public function getStepIndexes()
     {
         $dates = [];
 
+        // TODO : Think about doing this a cleaner way with carbon instead with timestamps ...
         $current = $this->start->timestamp;
         $last = $this->end->timestamp;
 
@@ -71,12 +114,11 @@ class Interval
         return $dates;
     }
 
-
     /**
-     * @param       $date
+     * Converting a date to his step index according to the step precision of the interval
      *
-     * @return int
-     *
+     * @param Carbon $date
+     * @return string
      */
     public function getStepIndexFromDate(Carbon $date)
     {
@@ -98,6 +140,8 @@ class Interval
     }
 
     /**
+     * Get the step index format of the step precision
+     *
      * @return array
      */
     public function getStepFormat()
@@ -137,6 +181,11 @@ class Interval
         return false;
     }
 
+    /**
+     * Get the string corresponding to the incrementation of each steps
+     *
+     * @return string
+     */
     public function getStepIncrement()
     {
         switch ($this->step) {
