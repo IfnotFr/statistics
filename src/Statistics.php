@@ -63,6 +63,14 @@ class Statistics
     }
 
     /**
+     * @return Interval
+     */
+    public function getInterval()
+    {
+        return $this->interval;
+    }
+
+    /**
      * @param $name
      * @param $method
      *
@@ -133,14 +141,12 @@ class Statistics
     {
         $datas = [];
 
-        // Getting different values for the grouping
-        $groupValues = [
-            "" => []
-        ];
-
         if (isset($this->group_column)) {
             $query = clone $baseQuery;
             $groupValues = $query->distinct()->lists($this->group_column)->all();
+        }
+        else {
+            $groupValues = [''];
         }
 
         // Filling datas with empty values on all range dates
@@ -154,7 +160,14 @@ class Statistics
         $query = clone $baseQuery;
         foreach ($query->get() as $row) {
             $index = $this->interval->getStepIndexFromDate($row->{$this->date_column});
-            $datas[$row->{$this->group_column}][$index] = $this->getDatasForRow($row, $datas[$row->{$this->group_column}][$index]);
+
+            // TODO : This if can be more elegant :(
+            if (isset($this->group_column)) {
+                $datas[$row->{$this->group_column}][$index] = $this->getDatasForRow($row, $datas[$row->{$this->group_column}][$index]);
+            }
+            else {
+                $datas[''][$index] = $this->getDatasForRow($row, $datas[''][$index]);
+            }
         }
 
         // Build values of indicators when all done
