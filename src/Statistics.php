@@ -15,7 +15,7 @@ class Statistics
     protected $interval;
 
     protected $date_column;
-    protected $group_column;
+    protected $grouping;
 
     protected $indicators;
 
@@ -106,11 +106,11 @@ class Statistics
      *
      * @return $this
      */
-    public function group($column)
+    public function group($grouping)
     {
         $this->cache = null;
 
-        $this->group_column = $column;
+        $this->grouping = $grouping;
 
         return $this;
     }
@@ -141,13 +141,7 @@ class Statistics
     {
         $datas = [];
 
-        if (isset($this->group_column)) {
-            $query = clone $baseQuery;
-            $groupValues = $query->distinct()->lists($this->group_column)->all();
-        }
-        else {
-            $groupValues = [''];
-        }
+        $groupValues = $this->getGroupValues($this->query);
 
         // Filling datas with empty values on all range dates
         foreach ($groupValues as $groupValue) {
@@ -161,13 +155,7 @@ class Statistics
         foreach ($query->get() as $row) {
             $index = $this->interval->getStepIndexFromDate($row->{$this->date_column});
 
-            // TODO : This if can be more elegant :(
-            if (isset($this->group_column)) {
-                $datas[$row->{$this->group_column}][$index] = $this->getDatasForRow($row, $datas[$row->{$this->group_column}][$index]);
-            }
-            else {
-                $datas[''][$index] = $this->getDatasForRow($row, $datas[''][$index]);
-            }
+            $datas[$this->getGroupValueForRow($row)][$index] = $this->getDatasForRow($row, $datas[$this->getGroupValueForRow($row)][$index]);
         }
 
         // Build values of indicators when all done
@@ -182,7 +170,7 @@ class Statistics
             $datas[$groupValue] = new Collection($datas[$groupValue]);
         }
 
-        if (isset($this->group_column)) {
+        if (isset($this->grouping)) {
             return $datas;
         } else {
             return $datas[""];
@@ -217,5 +205,39 @@ class Statistics
         }
 
         return $datas;
+    }
+
+    protected function getGroupValues($originalQuery)
+    {
+        $query = clone $originalQuery;
+
+        if(is_callable($this->grouping)) {
+            $groupValues = [];
+
+            foreach($query->get() as $row) {
+                $groupValues[] = call_user_func_array($this->grouping, [$row]);
+            }
+
+            return array_unique($groupValues);
+        }
+        elseif(is_string($this->grouping)) {
+            return $query->distinct()->lists($this->grouping)->all();
+        }
+        else {
+            return [''];
+        }
+    }
+
+    protected function getGroupValueForRow($row)
+    {
+        if(is_callable($this->grouping)) {
+            return call_user_func_array($this->grouping, [$row]);
+        }
+        elseif(is_string($this->grouping)) {
+            return $row->{$this->grouping};
+        }
+        else {
+            return '';
+        }
     }
 }
