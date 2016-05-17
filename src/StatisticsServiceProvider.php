@@ -1,6 +1,8 @@
 <?php namespace WhiteFrame\Statistics;
 
 use Illuminate\Support\ServiceProvider;
+use WhiteFrame\Support\Application;
+use WhiteFrame\Support\Framework;
 
 /**
  * Class StatisticsServiceProvider
@@ -20,7 +22,19 @@ class StatisticsServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        Framework::registerPackage('statistics');
+    }
 
+    public function boot()
+    {
+        $this->registerRepositoryMacros();
+    }
+
+    public function registerRepositoryMacros()
+    {
+        if(Framework::hasPackage('helloquent')) {
+            app()->make('WhiteFrame\Statistics\Helloquent\RepositoryMacros')->register();
+        }
     }
 
     /**
