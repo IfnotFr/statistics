@@ -1,7 +1,7 @@
 <?php
 namespace WhiteFrame\Statistics;
 
-use B2B\Core\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -153,7 +153,18 @@ class Statistics
         // Building datas with indicators functions
         $query = clone $baseQuery;
         foreach ($query->get() as $row) {
-            $index = $this->interval->getStepIndexFromDate($row->{$this->date_column});
+            // Date is already an instance of Carbon.
+        	if ($row->{$this->date_column} instanceof Carbon) {
+        		$date = $row->{$this->date_column};
+			} // Date if an integer, convert it to timestamp.
+			elseif (is_numeric($row->{$this->date_column})) {
+				$date = Carbon::createFromTimestamp($row->{$this->date_column});
+			} // Date is in year-month-day format.
+			elseif (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $row->{$this->date_column})) {
+				$date = Carbon::createFromFormat('Y-m-d', $row->{$this->date_column})->startOfDay();
+			}
+            
+            $index = $this->interval->getStepIndexFromDate($date);
 
             $datas[$this->getGroupValueForRow($row)][$index] = $this->getDatasForRow($row, $datas[$this->getGroupValueForRow($row)][$index]);
         }
