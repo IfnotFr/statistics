@@ -1,5 +1,5 @@
 {
-  "name": "white-frame/statistics",
+  "name": "ifnot/statistics",
   "description": "Tools for extracting statistics from a sql table",
   "license": "WTFPL",
   "authors": [
