@@ -1,7 +1,6 @@
 <?php
 namespace Ifnot\Statistics;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 
@@ -15,6 +14,7 @@ class Statistics
     protected $interval;
 
     protected $date_column;
+
     protected $grouping;
 
     protected $indicators;
@@ -45,6 +45,7 @@ class Statistics
     }
 
     /**
+     * @param $step
      * @param Carbon $start
      * @param Carbon $end
      *
@@ -54,10 +55,7 @@ class Statistics
     {
         $this->cache = null;
 
-        $this->interval
-            ->step($step)
-            ->start($start)
-            ->end($end);
+        $this->interval->step($step)->start($start)->end($end);
 
         return $this;
     }
@@ -72,7 +70,8 @@ class Statistics
 
     /**
      * @param $name
-     * @param $method
+     * @param $function
+     * @param null $counting_method
      *
      * @return $this
      */
@@ -91,6 +90,8 @@ class Statistics
 
     /**
      * @param $column
+     *
+     * @return $this
      */
     public function date($column)
     {
@@ -102,7 +103,7 @@ class Statistics
     }
 
     /**
-     * @param $column
+     * @param $grouping
      *
      * @return $this
      */
@@ -120,14 +121,14 @@ class Statistics
      */
     public function make()
     {
-        if (!is_null($this->cache)) {
+        if (! is_null($this->cache)) {
             return $this->cache;
         }
 
         // Configure the query for setting the date interval
         $query = $this->query->whereBetween($this->date_column, [
-            $this->interval->start()->format('Y-m-d') . " 00:00:00",
-            $this->interval->end()->format('Y-m-d') . " 23:59:59"
+            $this->interval->start()->format('Y-m-d')." 00:00:00",
+            $this->interval->end()->format('Y-m-d')." 23:59:59"
         ]);
 
         // Converting the query to builded array datas
@@ -137,7 +138,12 @@ class Statistics
         return $this->cache = $datas;
     }
 
-    protected function getDatasFromQuery(Builder $baseQuery)
+    /**
+     * @param $baseQuery
+     *
+     * @return array|mixed
+     */
+    protected function getDatasFromQuery($baseQuery)
     {
         $datas = [];
 
@@ -153,18 +159,18 @@ class Statistics
         // Building datas with indicators functions
         $query = clone $baseQuery;
         foreach ($query->get() as $row) {
-			// Date if already an instance of Carbon.
-			if ($row->{$this->date_column} instanceof Carbon) {
-				$date = $row->{$this->date_column};
-			} // Date if an integer, convert it to timestamp.
-			elseif (is_numeric($row->{$this->date_column})) {
-				$date = Carbon::createFromTimestamp($row->{$this->date_column});
-			} // Date is in year-month-day format.
-			elseif (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $row->{$this->date_column})) {
-				$date = Carbon::createFromFormat('Y-m-d', $row->{$this->date_column})->startOfDay();
-			}
+            // Date if already an instance of Carbon.
+            if ($row->{$this->date_column} instanceof Carbon) {
+                $date = $row->{$this->date_column};
+            } // Date if an integer, convert it to timestamp.
+            elseif (is_numeric($row->{$this->date_column})) {
+                $date = Carbon::createFromTimestamp($row->{$this->date_column});
+            } // Date is in year-month-day format.
+            elseif (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $row->{$this->date_column})) {
+                $date = Carbon::createFromFormat('Y-m-d', $row->{$this->date_column})->startOfDay();
+            }
 
-			$index = $this->interval->getStepIndexFromDate($date);
+            $index = $this->interval->getStepIndexFromDate($date);
 
             $datas[$this->getGroupValueForRow($row)][$index] = $this->getDatasForRow($row, $datas[$this->getGroupValueForRow($row)][$index]);
         }
@@ -204,6 +210,7 @@ class Statistics
 
     /**
      * @param $row
+     * @param $old
      *
      * @return array
      */
@@ -218,36 +225,42 @@ class Statistics
         return $datas;
     }
 
+    /**
+     * @param $originalQuery
+     *
+     * @return array
+     */
     protected function getGroupValues($originalQuery)
     {
         $query = clone $originalQuery;
 
-        if(is_callable($this->grouping)) {
+        if (is_callable($this->grouping)) {
             $groupValues = [];
 
-            foreach($query->get() as $row) {
+            foreach ($query->get() as $row) {
                 $groupValues[] = call_user_func_array($this->grouping, [$row]);
             }
 
             return array_unique($groupValues);
-        }
-        elseif(is_string($this->grouping)) {
+        } elseif (is_string($this->grouping)) {
             return $query->distinct()->lists($this->grouping)->all();
-        }
-        else {
+        } else {
             return [''];
         }
     }
 
+    /**
+     * @param $row
+     *
+     * @return mixed|string
+     */
     protected function getGroupValueForRow($row)
     {
-        if(is_callable($this->grouping)) {
+        if (is_callable($this->grouping)) {
             return call_user_func_array($this->grouping, [$row]);
-        }
-        elseif(is_string($this->grouping)) {
+        } elseif (is_string($this->grouping)) {
             return $row->{$this->grouping};
-        }
-        else {
+        } else {
             return '';
         }
     }
