@@ -1,9 +1,9 @@
 <?php
-namespace WhiteFrame\Statistics;
+namespace Ifnot\Statistics;
 
 use Illuminate\Database\Eloquent\Builder;
-use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Carbon\Carbon;
 
 /**
  * Class Statistics

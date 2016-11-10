@@ -13,16 +13,14 @@ Allows you to extract a `Illuminate\Support\Collection` of statistics about a se
 
 Install it with composer :
 
-   composer require white-frame/statistics:5.1
-
-**Use the release corresponding to your laravel version : 5.1 for Laravel 5.1**
+   composer require ifnot/statistics
 
 ## Usage
 
 ### 1 : Instanciate a `Statistics` object from a eloquent query :
 
 ```php
-use WhiteFrame\Statistics\Statistics;
+use Ifnot\Statistics\Statistics;
 
 // Get all validated sales (you can also take all with Sale::query())
 $validSales = Sale::whereNotNull('validated_at');
@@ -34,7 +32,7 @@ $statistics = Statistics::of($validSales);
 ### 2 : Specify the date column and the interval for filtering datas :
 
 ```php
-use WhiteFrame\Statistics\Interval;
+use Ifnot\Statistics\Interval;
 
 // If we want to build statistics about validation date of sales (it can be also of the creation date, 
 // in this case we will use the eloquent created_at ...) 

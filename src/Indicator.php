@@ -1,8 +1,8 @@
-<?php namespace WhiteFrame\Statistics;
+<?php namespace Ifnot\Statistics;
 
 /**
  * Class Indicator
- * @package WhiteFrame\Statistics
+ * @package Ifnot\Statistics
  */
 class Indicator
 {

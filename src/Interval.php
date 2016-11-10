@@ -1,10 +1,10 @@
-<?php namespace WhiteFrame\Statistics;
+<?php namespace Ifnot\Statistics;
 
 use Carbon\Carbon;
 
 /**
  * Class Interval
- * @package WhiteFrame\Statistics
+ * @package Ifnot\Statistics
  */
 class Interval
 {
