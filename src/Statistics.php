@@ -182,7 +182,7 @@ class Statistics
         }
 
         if (isset($this->grouping)) {
-            return $datas;
+            return new Collection(array_except($datas, ""));
         } else {
             return $datas[""];
         }
