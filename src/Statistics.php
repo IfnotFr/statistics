@@ -243,7 +243,7 @@ class Statistics
 
             return array_unique($groupValues);
         } elseif (is_string($this->grouping)) {
-            return $query->distinct()->lists($this->grouping)->all();
+            return $query->distinct()->pluck($this->grouping)->all();
         } else {
             return [''];
         }
