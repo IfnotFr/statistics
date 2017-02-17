@@ -36,7 +36,6 @@ class Statistics
 
     /**
      * @param $query
-     *
      * @return Statistics
      */
     public static function of($query)
@@ -48,7 +47,6 @@ class Statistics
      * @param $step
      * @param Carbon $start
      * @param Carbon $end
-     *
      * @return $this
      */
     public function interval($step, Carbon $start, Carbon $end)
@@ -72,7 +70,6 @@ class Statistics
      * @param $name
      * @param $function
      * @param null $counting_method
-     *
      * @return $this
      */
     public function indicator($name, $function, $counting_method = null)
@@ -90,7 +87,6 @@ class Statistics
 
     /**
      * @param $column
-     *
      * @return $this
      */
     public function date($column)
@@ -104,7 +100,6 @@ class Statistics
 
     /**
      * @param $grouping
-     *
      * @return $this
      */
     public function group($grouping)
@@ -121,14 +116,14 @@ class Statistics
      */
     public function make()
     {
-        if (! is_null($this->cache)) {
+        if (!is_null($this->cache)) {
             return $this->cache;
         }
 
         // Configure the query for setting the date interval
         $query = $this->query->whereBetween($this->date_column, [
-            $this->interval->start()->format('Y-m-d')." 00:00:00",
-            $this->interval->end()->format('Y-m-d')." 23:59:59"
+            $this->interval->start()->format('Y-m-d') . " 00:00:00",
+            $this->interval->end()->format('Y-m-d') . " 23:59:59"
         ]);
 
         // Converting the query to builded array datas
@@ -140,7 +135,6 @@ class Statistics
 
     /**
      * @param $baseQuery
-     *
      * @return array|mixed
      */
     protected function getDatasFromQuery($baseQuery)
@@ -188,7 +182,7 @@ class Statistics
         }
 
         if (isset($this->grouping)) {
-            return $datas;
+            return new Collection(array_except($datas, ""));
         } else {
             return $datas[""];
         }
@@ -211,7 +205,6 @@ class Statistics
     /**
      * @param $row
      * @param $old
-     *
      * @return array
      */
     protected function getDatasForRow($row, $old)
@@ -227,7 +220,6 @@ class Statistics
 
     /**
      * @param $originalQuery
-     *
      * @return array
      */
     protected function getGroupValues($originalQuery)
@@ -243,7 +235,7 @@ class Statistics
 
             return array_unique($groupValues);
         } elseif (is_string($this->grouping)) {
-            return $query->distinct()->lists($this->grouping)->all();
+            return $query->distinct()->pluck($this->grouping)->all();
         } else {
             return [''];
         }
@@ -251,7 +243,6 @@ class Statistics
 
     /**
      * @param $row
-     *
      * @return mixed|string
      */
     protected function getGroupValueForRow($row)
