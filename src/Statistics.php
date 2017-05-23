@@ -152,14 +152,14 @@ class Statistics
      */
     public function make()
     {
-        if (!is_null($this->cache)) {
+        if (! is_null($this->cache)) {
             return $this->cache;
         }
 
         // Configure the query for setting the date interval
         $query = $this->query->whereBetween($this->date_column, [
-            $this->interval->start()->format('Y-m-d') . " 00:00:00",
-            $this->interval->end()->format('Y-m-d') . " 23:59:59"
+            $this->interval->start()->format('Y-m-d')." 00:00:00",
+            $this->interval->end()->format('Y-m-d')." 23:59:59",
         ]);
 
         // Converting the query to builded array datas
