@@ -1,8 +1,10 @@
 <?php
+
 namespace Ifnot\Statistics;
 
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Class Statistics
@@ -49,13 +51,47 @@ class Statistics
      * @param Carbon $end
      * @return $this
      */
-    public function interval($step, Carbon $start, Carbon $end)
+    public function interval($step, Carbon $start = null, Carbon $end = null)
     {
         $this->cache = null;
 
-        $this->interval->step($step)->start($start)->end($end);
+        $this->interval->step($step);
+        $this->interval->start(isset($start) ? $start : $this->getStartDateFromQuery(clone $this->query));
+        $this->interval->end(isset($end) ? $end : $this->getEndDateFromQuery(clone $this->query));
 
         return $this;
+    }
+
+    /**
+     * @param $query
+     * @return mixed
+     */
+    protected function getStartDateFromQuery($query)
+    {
+        $date =  $query->select(DB::raw('MIN(' . $this->date_column . ') as `date`'))->first()->date;
+
+        if(is_null($date)) {
+            return Carbon::now();
+        }
+        else {
+            return Carbon::createFromFormat('Y-m-d H:i:s', $date);
+        }
+    }
+
+    /**
+     * @param $query
+     * @return mixed
+     */
+    protected function getEndDateFromQuery($query)
+    {
+        $date = $query->select(DB::raw('MAX(' . $this->date_column . ') as `date`'))->first()->date;
+
+        if(is_null($date)) {
+            return Carbon::now();
+        }
+        else {
+            return Carbon::createFromFormat('Y-m-d H:i:s', $date);
+        }
     }
 
     /**
