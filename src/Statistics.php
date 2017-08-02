@@ -198,6 +198,9 @@ class Statistics
             } // Date is in year-month-day format.
             elseif (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $row->{$this->date_column})) {
                 $date = Carbon::createFromFormat('Y-m-d', $row->{$this->date_column})->startOfDay();
+            } // Date is in year-month-day format plus hour minutes seconds.
+            elseif (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2}) \d{1,2}:\d{1,2}:\d{1,2}$/', $row->{$this->date_column})) {
+                $date = Carbon::createFromFormat('Y-m-d H:i:s', $row->{$this->date_column})->startOfDay();
             }
 
             $index = $this->interval->getStepIndexFromDate($date);
