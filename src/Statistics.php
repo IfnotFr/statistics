@@ -205,7 +205,10 @@ class Statistics
 
             $index = $this->interval->getStepIndexFromDate($date);
 
-            $datas[$this->getGroupValueForRow($row)][$index] = $this->getDatasForRow($row, $datas[$this->getGroupValueForRow($row)][$index]);
+            // Avoid out of range data breaking array data building
+            if(key_exists($index, $datas[$this->getGroupValueForRow($row)])) {
+                $datas[$this->getGroupValueForRow($row)][$index] = $this->getDatasForRow($row, $datas[$this->getGroupValueForRow($row)][$index]);
+            }
         }
 
         // Build values of indicators when all done
