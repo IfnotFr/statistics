@@ -124,9 +124,9 @@ class Interval
     {
         switch ($this->step) {
             case "yearly":
-                $date->month = 0;
+                $date->month = 1;
             case "monthly":
-                $date->day = 0;
+                $date->day = 1;
             case "daily":
                 $date->hour = 0;
             case "hourly":
