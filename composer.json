@@ -14,7 +14,7 @@
     }
   },
   "require": {
-    "illuminate/support": "5.*",
+    "illuminate/support": "4.*|5.*",
     "nesbot/carbon": "1.*"
   }
 }
