@@ -15,6 +15,6 @@
   },
   "require": {
     "illuminate/support": ">=4",
-    "nesbot/carbon": "1.*"
+    "nesbot/carbon": ">=1"
   }
 }
